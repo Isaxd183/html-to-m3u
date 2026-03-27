@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HTML → M3U Converter</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    min-height: 100vh;
+    background: #0a0a0f;
+    color: #e8e6e0;
+    font-family: 'Courier New', Courier, monospace;
+  }
+  header {
+    border-bottom: 1px solid #2a2a3a;
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: #0d0d16;
+  }
+  .logo {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, #7c3aed, #2563eb);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  header h1 { font-size: 17px; font-weight: 700; letter-spacing: .04em; color: #f0eeff; }
+  header p  { font-size: 11px; color: #6b6b8a; letter-spacing: .06em; }
+
+  main { max-width: 900px; margin: 0 auto; padding: 28px 24px; }
+
+  label.field-label {
+    font-size: 11px; color: #7c7c9a; letter-spacing: .08em;
+    display: block; margin-bottom: 6px;
+  }
+  .url-row { display: flex; gap: 8px; margin-bottom: 18px; }
+  input[type=text] {
+    flex: 1;
+    background: #12121e;
+    border: 1px solid #2a2a3a;
+    border-radius: 7px;
+    padding: 10px 14px;
+    color: #c8c6ff;
+    font-family: inherit;
+    font-size: 13px;
+    outline: none;
+  }
+  input[type=text]:focus { border-color: #4a4aaa; }
+
+  #reparse-btn {
+    background: #1e1e3a; border: 1px solid #3a3a5a;
+    border-radius: 7px; color: #a0a0ff;
+    padding: 10px 16px; cursor: pointer;
+    font-size: 12px; font-family: inherit;
+    display: none;
+  }
+
+  /* Drop zone */
+  #dropzone {
+    border: 2px dashed #2a2a3a;
+    border-radius: 12px;
+    padding: 36px 24px;
+    text-align: center;
+    cursor: pointer;
+    background: #0d0d18;
+    transition: all .2s;
+    margin-bottom: 24px;
+  }
+  #dropzone.drag { border-color: #7c3aed; background: #12082a; }
+  #dropzone .icon { font-size: 32px; margin-bottom: 10px; }
+  #dropzone .hint { color: #a0a0c0; font-size: 14px; }
+  #dropzone .sub  { color: #4a4a6a; font-size: 11px; margin-top: 6px; }
+  #file-input { display: none; }
+
+  /* Error */
+  #error-box {
+    display: none;
+    background: #1a0a0a; border: 1px solid #5a1a1a;
+    border-radius: 8px; padding: 12px 16px;
+    color: #ff6b6b; font-size: 13px; margin-bottom: 20px;
+  }
+
+  /* Results */
+  #results { display: none; }
+
+  .results-header {
+    display: flex; align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap; gap: 10px;
+    margin-bottom: 16px;
+  }
+  .results-left { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  #count { font-size: 12px; color: #6b6b8a; }
+  #count span { color: #7c3aed; font-weight: 700; }
+
+  .tabs { display: flex; gap: 4px; }
+  .tab-btn {
+    background: transparent; border: 1px solid #1a1a2a;
+    border-radius: 6px; color: #5a5a7a;
+    padding: 5px 12px; cursor: pointer;
+    font-size: 11px; font-family: inherit;
+    text-transform: uppercase; letter-spacing: .06em;
+    transition: all .15s;
+  }
+  .tab-btn.active { background: #1e1e3a; border-color: #3a3a6a; color: #a0a0ff; }
+
+  .action-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn-copy, .btn-txt, .btn-m3u {
+    border-radius: 8px; padding: 9px 16px;
+    cursor: pointer; font-size: 12px;
+    font-family: inherit; font-weight: 600;
+    border: 1px solid; transition: all .2s;
+    white-space: nowrap;
+  }
+  .btn-copy {
+    background: #12121e; border-color: #2a2a4a; color: #a0a0ff;
+  }
+  .btn-copy.ok { background: #14301a; border-color: #2a6a3a; color: #4dff88; }
+  .btn-txt  { background: #12121e; border-color: #2a2a4a; color: #a0a0ff; }
+  .btn-m3u  {
+    background: linear-gradient(135deg,#7c3aed,#2563eb);
+    border-color: transparent; color: #fff; font-weight: 700;
+    box-shadow: 0 0 20px rgba(124,58,237,.3);
+    letter-spacing: .04em;
+  }
+
+  /* Table */
+  #table-wrap {
+    background: #0d0d18; border: 1px solid #1e1e30;
+    border-radius: 10px; overflow: hidden;
+  }
+  .table-head {
+    background: #12121e; padding: 10px 16px;
+    font-size: 11px; color: #4a4a6a; letter-spacing: .06em;
+    border-bottom: 1px solid #1e1e30;
+    display: grid; grid-template-columns: 1fr auto;
+  }
+  #entry-list { max-height: 420px; overflow-y: auto; }
+  .entry-row {
+    padding: 10px 16px;
+    border-bottom: 1px solid #16162a;
+    display: grid; grid-template-columns: 1fr auto;
+    align-items: start; gap: 10px;
+  }
+  .entry-row:nth-child(even) { background: #0b0b16; }
+  .entry-title {
+    background: transparent; border: none;
+    color: #d8d6f8; font-family: inherit;
+    font-size: 13px; width: 100%; outline: none;
+    margin-bottom: 3px; padding: 0;
+  }
+  .entry-url {
+    font-size: 10px; color: #4a4a7a;
+    white-space: nowrap; overflow: hidden;
+    text-overflow: ellipsis; max-width: 600px;
+  }
+  .del-btn {
+    background: transparent; border: 1px solid #3a1a1a;
+    border-radius: 5px; color: #ff4a4a;
+    cursor: pointer; padding: 3px 8px;
+    font-size: 12px; font-family: inherit;
+  }
+
+  /* Raw */
+  #raw-wrap {
+    background: #0d0d18; border: 1px solid #1e1e30;
+    border-radius: 10px; overflow: hidden; display: none;
+  }
+  .raw-head {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 16px; background: #12121e;
+    border-bottom: 1px solid #1e1e30;
+    font-size: 11px; color: #4a4a6a; letter-spacing: .06em;
+  }
+  .raw-copy-btn {
+    background: #1e1e3a; border: 1px solid #2a2a4a;
+    border-radius: 5px; color: #8080ff; cursor: pointer;
+    padding: 4px 10px; font-size: 11px; font-family: inherit;
+    transition: all .2s;
+  }
+  .raw-copy-btn.ok { background: #14301a; border-color: #2a6a3a; color: #4dff88; }
+  #m3u-output {
+    width: 100%; height: 380px;
+    background: transparent; border: none;
+    color: #9090c0; font-family: inherit;
+    font-size: 11px; padding: 16px;
+    resize: none; outline: none;
+    line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">📋</div>
+  <div>
+    <h1>HTML → M3U</h1>
+    <p>DIRECTORY LISTING CONVERTER</p>
+  </div>
+</header>
+
+<main>
+  <label class="field-label">URL BASE (opcional — para construir URLs completas de rutas relativas)</label>
+  <div class="url-row">
+    <input type="text" id="base-url" placeholder="https://mi-servidor.com/peliculas/">
+    <button id="reparse-btn">Re-parsear</button>
+  </div>
+
+  <div id="dropzone">
+    <input type="file" id="file-input" accept=".html,.htm">
+    <div class="icon">📂</div>
+    <div class="hint" id="drop-hint">Arrastra tu HTML aquí o haz clic para seleccionar</div>
+    <div class="sub" id="drop-sub">Apache, Nginx, lighttpd — cualquier directorio HTML</div>
+  </div>
+
+  <div id="error-box"></div>
+
+  <div id="results">
+    <div class="results-header">
+      <div class="results-left">
+        <div id="count"><span id="count-num">0</span> entradas encontradas</div>
+        <div class="tabs">
+          <button class="tab-btn active" id="tab-preview" onclick="switchTab('preview')">Vista previa</button>
+          <button class="tab-btn" id="tab-raw" onclick="switchTab('raw')">M3U raw</button>
+        </div>
+      </div>
+      <div class="action-btns">
+        <button class="btn-copy" id="copy-btn" onclick="copyM3U()">📋 Copiar M3U</button>
+        <button class="btn-txt" onclick="download('txt')">💾 Guardar .txt</button>
+        <button class="btn-m3u" onclick="download('m3u')">⬇ Descargar .m3u</button>
+      </div>
+    </div>
+
+    <div id="table-wrap">
+      <div class="table-head">
+        <span>TÍTULO / URL</span>
+        <span>ACCIÓN</span>
+      </div>
+      <div id="entry-list"></div>
+    </div>
+
+    <div id="raw-wrap">
+      <div class="raw-head">
+        <span>M3U OUTPUT</span>
+        <button class="raw-copy-btn" id="raw-copy-btn" onclick="copyM3U()">Copiar</button>
+      </div>
+      <textarea id="m3u-output" readonly></textarea>
+    </div>
+  </div>
+</main>
+
+<script>
+const IGNORED = [
+  /^\?/, /^#/, /^\.\.\//, /^javascript:/i,
+  /\/$/, /^mailto:/i,
+  /\/(C|M|D|S|N|A)=/, /&C=/, /&M=/, /&O=/, /&D=/, /&S=/,
+  /^\/$/
+];
+const VIDEO_EXTS = /\.(mp4|mkv|avi|mov|wmv|flv|webm|ts|m2ts|mpg|mpeg|m4v|3gp|ogv|rmvb|divx|f4v)(\?.*)?$/i;
+const SKIP_TITLES = ["Name","Last modified","Size","Description","Parent Directory"];
+
+let entries = [];
+let rawHtml = "";
+let currentFile = "";
+let currentTab = "preview";
+
+// ── DOM refs ──
+const dropzone   = document.getElementById("dropzone");
+const fileInput  = document.getElementById("file-input");
+const baseUrlEl  = document.getElementById("base-url");
+const reparseBtn = document.getElementById("reparse-btn");
+const errorBox   = document.getElementById("error-box");
+const results    = document.getElementById("results");
+const entryList  = document.getElementById("entry-list");
+const m3uOutput  = document.getElementById("m3u-output");
+const countNum   = document.getElementById("count-num");
+const tableWrap  = document.getElementById("table-wrap");
+const rawWrap    = document.getElementById("raw-wrap");
+const dropHint   = document.getElementById("drop-hint");
+const dropSub    = document.getElementById("drop-sub");
+const copyBtn    = document.getElementById("copy-btn");
+const rawCopyBtn = document.getElementById("raw-copy-btn");
+
+// ── Drag & Drop ──
+dropzone.addEventListener("click", () => fileInput.click());
+dropzone.addEventListener("dragover", e => { e.preventDefault(); dropzone.classList.add("drag"); });
+dropzone.addEventListener("dragleave", () => dropzone.classList.remove("drag"));
+dropzone.addEventListener("drop", e => {
+  e.preventDefault();
+  dropzone.classList.remove("drag");
+  const f = e.dataTransfer.files[0];
+  if (f) processFile(f);
+});
+fileInput.addEventListener("change", () => { if (fileInput.files[0]) processFile(fileInput.files[0]); });
+reparseBtn.addEventListener("click", () => { if (rawHtml) parseAndRender(rawHtml); });
+
+// ── File processing ──
+function processFile(file) {
+  currentFile = file.name;
+  dropHint.innerHTML = `<span style="color:#7c3aed">✓</span> <span style="color:#c8c6ff">${file.name}</span>`;
+  dropSub.style.display = "none";
+  reparseBtn.style.display = "inline-block";
+
+  const reader = new FileReader();
+  reader.onload = e => { rawHtml = e.target.result; parseAndRender(rawHtml); };
+  reader.readAsText(file);
+}
+
+function parseAndRender(html) {
+  hideError();
+  const parsed = parseApacheHTML(html, baseUrlEl.value.trim());
+  if (!parsed.length) { showError("No se encontraron enlaces válidos en el HTML."); return; }
+  entries = parsed;
+  renderAll();
+}
+
+function parseApacheHTML(html, baseUrl) {
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const anchors = doc.querySelectorAll("a[href]");
+  const out = [];
+
+  for (const a of anchors) {
+    const href = (a.getAttribute("href") || "").trim();
+    if (!href) continue;
+    if (IGNORED.some(r => r.test(href))) continue;
+
+    const isMagnet = /^magnet:/i.test(href);
+    const isHttp   = /^https?:\/\//i.test(href);
+
+    let url = href;
+    if (!isMagnet && !isHttp && baseUrl) {
+      try { url = new URL(href, baseUrl).href; } catch {}
+    }
+
+    let title = (a.textContent || "").trim().replace(/\s+/g, " ");
+    if (!title || title === href) {
+      try {
+        const parts = decodeURIComponent(href).split("/");
+        title = parts[parts.length - 1].split("?")[0];
+      } catch { title = href; }
+    }
+    title = title.replace(/\/$/, "").trim();
+    if (!title) continue;
+    if (SKIP_TITLES.includes(title)) continue;
+    if (/^\[.*\]$/.test(title) && !isMagnet && !VIDEO_EXTS.test(href)) continue;
+
+    out.push({ title, url, isMagnet });
+  }
+  return out;
+}
+
+function buildM3U() {
+  const lines = ["#EXTM3U"];
+  entries.forEach(e => {
+    lines.push(`#EXTINF:-1 tvg-logo="",${e.title}`);
+    lines.push(e.url);
+  });
+  return lines.join("\n");
+}
+
+function renderAll() {
+  const m3u = buildM3U();
+  m3uOutput.value = m3u;
+  countNum.textContent = entries.length;
+  renderList();
+  results.style.display = "block";
+  switchTab(currentTab);
+}
+
+function renderList() {
+  entryList.innerHTML = "";
+  entries.forEach((e, i) => {
+    const row = document.createElement("div");
+    row.className = "entry-row";
+    row.innerHTML = `
+      <div>
+        <input class="entry-title" value="${escHtml(e.title)}" data-i="${i}">
+        <div class="entry-url">${e.isMagnet ? "🧲 magnet" : escHtml(e.url.length > 80 ? e.url.slice(0,80)+"…" : e.url)}</div>
+      </div>
+      <button class="del-btn" data-i="${i}">✕</button>
+    `;
+    entryList.appendChild(row);
+  });
+
+  entryList.querySelectorAll(".entry-title").forEach(inp => {
+    inp.addEventListener("input", () => {
+      entries[+inp.dataset.i].title = inp.value;
+      m3uOutput.value = buildM3U();
+    });
+  });
+  entryList.querySelectorAll(".del-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      entries.splice(+btn.dataset.i, 1);
+      renderAll();
+    });
+  });
+}
+
+// ── Tabs ──
+function switchTab(tab) {
+  currentTab = tab;
+  tableWrap.style.display = tab === "preview" ? "block" : "none";
+  rawWrap.style.display   = tab === "raw"     ? "block" : "none";
+  document.getElementById("tab-preview").classList.toggle("active", tab === "preview");
+  document.getElementById("tab-raw").classList.toggle("active", tab === "raw");
+}
+
+// ── Copy ──
+function copyM3U() {
+  const m3u = buildM3U();
+  navigator.clipboard.writeText(m3u).then(() => {
+    [copyBtn, rawCopyBtn].forEach(b => {
+      b.classList.add("ok");
+      b.textContent = b === copyBtn ? "✓ Copiado" : "✓ Copiado";
+    });
+    setTimeout(() => {
+      copyBtn.classList.remove("ok"); copyBtn.textContent = "📋 Copiar M3U";
+      rawCopyBtn.classList.remove("ok"); rawCopyBtn.textContent = "Copiar";
+    }, 1800);
+  });
+}
+
+// ── Download ──
+function download(ext) {
+  const m3u = buildM3U();
+  const name = currentFile.replace(/\.html?$/i, "") || "lista";
+  const blob = new Blob([m3u], { type: "text/plain;charset=utf-8" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href = url; a.download = name + "." + ext;
+  a.click(); URL.revokeObjectURL(url);
+}
+
+// ── Helpers ──
+function showError(msg) {
+  errorBox.textContent = msg;
+  errorBox.style.display = "block";
+  results.style.display  = "none";
+}
+function hideError() {
+  errorBox.style.display = "none";
+}
+function escHtml(s) {
+  return s.replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+</script>
+</body>
+</html>
