@@ -30,14 +30,25 @@
   header h1 { font-size: 17px; font-weight: 700; letter-spacing: .04em; color: #f0eeff; }
   header p  { font-size: 11px; color: #6b6b8a; letter-spacing: .06em; }
 
-  main { max-width: 900px; margin: 0 auto; padding: 28px 24px; }
+  main { max-width: 960px; margin: 0 auto; padding: 28px 24px; }
 
   label.field-label {
     font-size: 11px; color: #7c7c9a; letter-spacing: .08em;
     display: block; margin-bottom: 6px;
   }
-  .url-row { display: flex; gap: 8px; margin-bottom: 18px; }
-  input[type=text] {
+
+  .config-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+  @media (max-width: 640px) { .config-grid { grid-template-columns: 1fr; } }
+
+  .config-block { display: flex; flex-direction: column; }
+
+  .input-row { display: flex; gap: 8px; }
+  input[type=text], input[type=password] {
     flex: 1;
     background: #12121e;
     border: 1px solid #2a2a3a;
@@ -47,22 +58,78 @@
     font-family: inherit;
     font-size: 13px;
     outline: none;
+    transition: border-color .2s;
   }
-  input[type=text]:focus { border-color: #4a4aaa; }
+  input[type=text]:focus,
+  input[type=password]:focus { border-color: #4a4aaa; }
 
-  #reparse-btn {
+  .tmdb-key-wrap {
+    position: relative;
+    flex: 1;
+    display: flex;
+  }
+  .tmdb-key-wrap input { width: 100%; }
+  .toggle-vis {
+    position: absolute; right: 10px; top: 50%;
+    transform: translateY(-50%);
+    background: none; border: none;
+    color: #5a5a8a; cursor: pointer;
+    font-size: 14px; padding: 2px;
+  }
+
+  #reparse-btn, .small-btn {
     background: #1e1e3a; border: 1px solid #3a3a5a;
     border-radius: 7px; color: #a0a0ff;
+    padding: 10px 14px; cursor: pointer;
+    font-size: 12px; font-family: inherit;
+    white-space: nowrap; transition: all .2s;
+  }
+  #reparse-btn:hover, .small-btn:hover {
+    background: #28284a; border-color: #5a5aaa;
+  }
+
+  /* TMDB fetch button */
+  #tmdb-btn {
+    background: linear-gradient(135deg, #1a6b3a, #0d4a2a);
+    border: 1px solid #2a8a4a;
+    border-radius: 7px; color: #4dff88;
     padding: 10px 16px; cursor: pointer;
     font-size: 12px; font-family: inherit;
+    white-space: nowrap; font-weight: 700;
+    transition: all .2s; letter-spacing: .04em;
+  }
+  #tmdb-btn:hover { background: linear-gradient(135deg, #1f8044, #125a34); }
+  #tmdb-btn:disabled {
+    opacity: .5; cursor: not-allowed;
+  }
+
+  /* Progress bar */
+  #tmdb-progress-wrap {
     display: none;
+    margin-top: 8px;
+    background: #12121e;
+    border: 1px solid #1e1e30;
+    border-radius: 6px;
+    overflow: hidden;
+    height: 6px;
+  }
+  #tmdb-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #1a6b3a, #4dff88);
+    width: 0%;
+    transition: width .3s;
+  }
+  #tmdb-status {
+    font-size: 10px; color: #4a6a5a;
+    margin-top: 4px; display: none;
+    letter-spacing: .04em;
   }
 
   /* Drop zone */
   #dropzone {
     border: 2px dashed #2a2a3a;
     border-radius: 12px;
-    padding: 36px 24px;
+    padding: 32px 24px;
     text-align: center;
     cursor: pointer;
     background: #0d0d18;
@@ -138,30 +205,77 @@
     border-bottom: 1px solid #1e1e30;
     display: grid; grid-template-columns: 1fr auto;
   }
-  #entry-list { max-height: 420px; overflow-y: auto; }
+  #entry-list { max-height: 460px; overflow-y: auto; }
+
   .entry-row {
     padding: 10px 16px;
     border-bottom: 1px solid #16162a;
-    display: grid; grid-template-columns: 1fr auto;
-    align-items: start; gap: 10px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: start; gap: 12px;
   }
   .entry-row:nth-child(even) { background: #0b0b16; }
+
+  /* Poster thumbnail */
+  .entry-poster {
+    width: 36px; height: 54px;
+    border-radius: 4px;
+    object-fit: cover;
+    border: 1px solid #2a2a3a;
+    background: #1a1a2a;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: #3a3a5a; font-size: 18px;
+    overflow: hidden;
+  }
+  .entry-poster img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    border-radius: 4px;
+  }
+  .entry-poster.loading {
+    animation: pulse 1s ease-in-out infinite alternate;
+  }
+  @keyframes pulse {
+    from { background: #1a1a2a; }
+    to   { background: #24243a; }
+  }
+
+  .entry-info { min-width: 0; }
+
   .entry-title {
     background: transparent; border: none;
     color: #d8d6f8; font-family: inherit;
     font-size: 13px; width: 100%; outline: none;
-    margin-bottom: 3px; padding: 0;
+    margin-bottom: 3px; padding: 2px 0;
+    border-bottom: 1px solid transparent;
+    transition: border-color .2s;
   }
+  .entry-title:focus {
+    border-bottom-color: #4a4aaa;
+  }
+
+  /* Parsed tags */
+  .entry-tags { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 3px; }
+  .tag {
+    font-size: 10px; border-radius: 3px;
+    padding: 1px 6px; letter-spacing: .04em;
+  }
+  .tag-year  { background: #1e1a3a; color: #9080ff; border: 1px solid #3a2a6a; }
+  .tag-lang  { background: #1a2a1a; color: #60cc80; border: 1px solid #2a5a3a; }
+  .tag-tech  { background: #1a2a3a; color: #60aacc; border: 1px solid #2a4a6a; }
+
   .entry-url {
     font-size: 10px; color: #4a4a7a;
     white-space: nowrap; overflow: hidden;
-    text-overflow: ellipsis; max-width: 600px;
+    text-overflow: ellipsis;
   }
   .del-btn {
     background: transparent; border: 1px solid #3a1a1a;
     border-radius: 5px; color: #ff4a4a;
-    cursor: pointer; padding: 3px 8px;
+    cursor: pointer; padding: 4px 8px;
     font-size: 12px; font-family: inherit;
+    align-self: start;
   }
 
   /* Raw */
@@ -183,13 +297,23 @@
   }
   .raw-copy-btn.ok { background: #14301a; border-color: #2a6a3a; color: #4dff88; }
   #m3u-output {
-    width: 100%; height: 380px;
+    width: 100%; height: 400px;
     background: transparent; border: none;
     color: #9090c0; font-family: inherit;
     font-size: 11px; padding: 16px;
     resize: none; outline: none;
     line-height: 1.6;
   }
+
+  /* Info badge */
+  .info-note {
+    font-size: 10px; color: #4a4a6a;
+    background: #12121e; border: 1px solid #1e1e30;
+    border-radius: 6px; padding: 6px 10px;
+    margin-top: 6px; letter-spacing: .03em;
+  }
+  .info-note a { color: #6060aa; text-decoration: none; }
+  .info-note a:hover { color: #8080ff; }
 </style>
 </head>
 <body>
@@ -203,16 +327,40 @@
 </header>
 
 <main>
-  <label class="field-label">URL BASE (opcional — para construir URLs completas de rutas relativas)</label>
-  <div class="url-row">
-    <input type="text" id="base-url" placeholder="https://mi-servidor.com/peliculas/">
-    <button id="reparse-btn">Re-parsear</button>
+
+  <!-- Config section -->
+  <div class="config-grid">
+    <div class="config-block">
+      <label class="field-label">URL BASE (opcional — para rutas relativas)</label>
+      <div class="input-row">
+        <input type="text" id="base-url" placeholder="https://mi-servidor.com/peliculas/">
+        <button id="reparse-btn" style="display:none">Re-parsear</button>
+      </div>
+    </div>
+
+    <div class="config-block">
+      <label class="field-label">TMDB API KEY (para buscar portadas automáticamente)</label>
+      <div class="input-row">
+        <div class="tmdb-key-wrap">
+          <input type="password" id="tmdb-key" placeholder="ej. a1b2c3d4e5f6...">
+          <button class="toggle-vis" id="toggle-key" title="Mostrar/ocultar">👁</button>
+        </div>
+        <button id="tmdb-btn" onclick="fetchAllPosters()" disabled>🖼 Buscar Portadas</button>
+      </div>
+      <div class="info-note">
+        API key gratuita en <a href="https://www.themoviedb.org/settings/api" target="_blank">themoviedb.org</a> →
+        Cuenta → Ajustes → API → Crear clave (v3)
+      </div>
+      <div id="tmdb-progress-wrap"><div id="tmdb-progress-bar"></div></div>
+      <div id="tmdb-status"></div>
+    </div>
   </div>
 
+  <!-- Drop zone -->
   <div id="dropzone">
-    <input type="file" id="file-input" accept=".html,.htm">
+    <input type="file" id="file-input" accept=".html,.htm,.txt">
     <div class="icon">📂</div>
-    <div class="hint" id="drop-hint">Arrastra tu HTML aquí o haz clic para seleccionar</div>
+    <div class="hint" id="drop-hint">Arrastra un HTML de directorio aquí o haz clic para seleccionar</div>
     <div class="sub" id="drop-sub">Apache, Nginx, lighttpd — cualquier directorio HTML</div>
   </div>
 
@@ -250,9 +398,13 @@
       <textarea id="m3u-output" readonly></textarea>
     </div>
   </div>
+
 </main>
 
 <script>
+// ─────────────────────────────────────────────────────────────
+//  CONSTANTS
+// ─────────────────────────────────────────────────────────────
 const IGNORED = [
   /^\?/, /^#/, /^\.\.\//, /^javascript:/i,
   /\/$/, /^mailto:/i,
@@ -262,45 +414,251 @@ const IGNORED = [
 const VIDEO_EXTS = /\.(mp4|mkv|avi|mov|wmv|flv|webm|ts|m2ts|mpg|mpeg|m4v|3gp|ogv|rmvb|divx|f4v)(\?.*)?$/i;
 const SKIP_TITLES = ["Name","Last modified","Size","Description","Parent Directory"];
 
-let entries = [];
-let rawHtml = "";
+// Language keyword map
+const LANG_MAP = {
+  lat: 'Lat', latino: 'Lat', latin: 'Lat',
+  esp: 'Esp', español: 'Esp', spanish: 'Esp',
+  sub: 'Sub', subtitulado: 'Sub',
+  subesp: 'SubEsp', 'sub-esp': 'SubEsp',
+  sublat: 'SubLat', 'sub-lat': 'SubLat',
+  eng: 'Eng', english: 'Eng',
+  ita: 'Ita', italian: 'Ita',
+  por: 'Por', 'pt-br': 'PtBr',
+  fra: 'Fra', fre: 'Fra', french: 'Fra',
+  dub: 'Dub', dubbed: 'Dub',
+  multi: 'Multi', dual: 'Dual',
+};
+
+// Quality/resolution map
+const QUALITY_MAP = {
+  '4k': '4K', '2160p': '4K', '1080p': '1080p', '1080i': '1080i',
+  '720p': '720p', '720i': '720i', '540p': '540p',
+  '480p': '480p', '360p': '360p', '240p': '240p',
+};
+
+// Source map
+const SOURCE_MAP = {
+  hdrip: 'HDRip', 'hd-rip': 'HDRip',
+  dvdrip: 'DVDRip', 'dvd-rip': 'DVDRip',
+  bdrip: 'BDRip', brrip: 'BRRip',
+  bluray: 'BluRay', 'blu-ray': 'BluRay', blueray: 'BluRay',
+  webrip: 'WEBRip', 'web-rip': 'WEBRip',
+  webdl: 'WEB-DL', 'web-dl': 'WEB-DL', webdlrip: 'WEB-DL',
+  hdcam: 'HDCAM', cam: 'CAM', hdts: 'HDTS',
+  dvdscr: 'DVDScr', dvds: 'DVDs', dvd: 'DVD',
+  scr: 'SCR', hdtv: 'HDTV',
+  amzn: 'AMZN', nf: 'NF', hmax: 'HMAX',
+  remux: 'Remux', pdvd: 'PDVD',
+  vod: 'VOD',
+};
+
+// Codec map
+const CODEC_MAP = {
+  x264: 'x264', x265: 'x265',
+  h264: 'H.264', 'h.264': 'H.264', '264': 'x264',
+  h265: 'H.265', 'h.265': 'H.265', '265': 'x265',
+  hevc: 'HEVC', avc: 'AVC',
+  xvid: 'XviD', divx: 'DivX',
+  mpeg4: 'MPEG-4', 'mpeg-4': 'MPEG-4',
+  aac: 'AAC', mp3: 'MP3', dts: 'DTS',
+  ac3: 'AC3', dd51: 'DD5.1',
+};
+
+// Words to keep lowercase inside a title (articles/prepositions)
+const LOWER_WORDS = new Set([
+  'a','an','the','of','in','on','at','to','for','and','or','but','nor','so','yet',
+  'de','del','la','el','los','las','en','con','por','para','un','una','y','e',
+  'al','su','sin','lo','le','les','du','des','le','les','et','un','une',
+]);
+
+// ─────────────────────────────────────────────────────────────
+//  FILENAME PARSER
+// ─────────────────────────────────────────────────────────────
+// Capitaliza una palabra correctamente:
+// - Si es toda dígitos → tal cual
+// - Si es un acrónimo reconocido (≤4 letras, todo caps en el original) → todo MAYÚS
+// - Si debe ir en minúsculas (artículo/preposición, no es la primera palabra) → minúsculas
+// - Si no → Primera Mayúscula + resto en minúsculas
+function titleCaseWord(w, isFirst) {
+  if (/^\d+(\.\d+)?$/.test(w)) return w;                           // número
+  const low = w.toLowerCase();
+  if (!isFirst && LOWER_WORDS.has(low)) return low;                 // artículo interno
+  // Acrónimo: all-caps y longitud ≤ 4 (LAT, SUB, XXL, USA...)
+  if (w === w.toUpperCase() && /^[A-Z]{2,4}$/.test(w)) return w;
+  return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+}
+
+function parseFilename(raw) {
+  // Remove video extension
+  const cleaned = raw.replace(/\.(mp4|mkv|avi|mov|wmv|flv|webm|m2ts|mpg|mpeg|m4v|3gp|ogv|rmvb|divx|f4v|ts)(\?.*)?$/i, '');
+
+  // Check if already space-separated (not dot-encoded)
+  const dotCount   = (cleaned.match(/\./g) || []).length;
+  const spaceCount = (cleaned.match(/ /g)  || []).length;
+
+  if (dotCount < 2 && spaceCount >= 1) {
+    // Space-separated: parse words, look for year/lang/quality tokens too
+    const words = cleaned.split(/\s+/);
+
+    // Find year
+    const YEAR_RE = /^(19\d{2}|20[0-4]\d)$/;
+    let yearIdx = -1, year = '';
+    for (let i = 1; i < words.length; i++) {
+      if (YEAR_RE.test(words[i])) { yearIdx = i; year = words[i]; break; }
+    }
+
+    let titleWords, metaWords;
+    if (yearIdx >= 0) {
+      titleWords = words.slice(0, yearIdx);
+      metaWords  = words.slice(yearIdx + 1);
+    } else {
+      // No year — look for first recognized meta keyword
+      let splitIdx = words.length;
+      for (let i = 0; i < words.length; i++) {
+        const low = words[i].toLowerCase();
+        if (LANG_MAP[low] || QUALITY_MAP[low] || SOURCE_MAP[low] || CODEC_MAP[low]) {
+          splitIdx = i; break;
+        }
+      }
+      titleWords = words.slice(0, splitIdx);
+      metaWords  = words.slice(splitIdx);
+    }
+
+    const title = titleWords.map((w, i) => titleCaseWord(w, i === 0)).filter(Boolean).join(' ');
+
+    // Parse meta
+    const langs = [], qualities = [], sources = [], codecs = [];
+    for (const w of metaWords) {
+      const low = w.toLowerCase();
+      if      (LANG_MAP[low])    langs.push(LANG_MAP[low]);
+      else if (QUALITY_MAP[low]) qualities.push(QUALITY_MAP[low]);
+      else if (SOURCE_MAP[low])  sources.push(SOURCE_MAP[low]);
+      else if (CODEC_MAP[low])   codecs.push(CODEC_MAP[low]);
+    }
+
+    let formatted = title;
+    if (year)            formatted += ` (${year})`;
+    if (langs.length)    formatted += ` [${langs.join(' ')}]`;
+    const tech = [...qualities, ...sources, ...codecs];
+    if (tech.length)     formatted += ` {${tech.join(' ')}}`;
+
+    return { formatted, searchTitle: title, year, langs, qualities, sources, codecs };
+  }
+
+  // Split by dots (and hyphens that look like separators, not part of words)
+  const parts = cleaned.split('.');
+
+  // ── Find year ──
+  const YEAR_RE = /^(19\d{2}|20[0-4]\d)$/;
+  let yearIdx = -1, year = '';
+  for (let i = 1; i < parts.length; i++) {
+    if (YEAR_RE.test(parts[i])) { yearIdx = i; year = parts[i]; break; }
+  }
+
+  let titleParts, metaParts;
+  if (yearIdx >= 0) {
+    titleParts = parts.slice(0, yearIdx);
+    metaParts  = parts.slice(yearIdx + 1);
+  } else {
+    // No year — split at first recognized keyword
+    let splitIdx = parts.length;
+    for (let i = 0; i < parts.length; i++) {
+      const low = parts[i].toLowerCase();
+      if (LANG_MAP[low] || QUALITY_MAP[low] || SOURCE_MAP[low] || CODEC_MAP[low]) {
+        splitIdx = i; break;
+      }
+    }
+    titleParts = parts.slice(0, splitIdx);
+    metaParts  = parts.slice(splitIdx);
+  }
+
+  // ── Build title ──
+  const title = titleParts.map((w, i) => titleCaseWord(w, i === 0)).filter(Boolean).join(' ');
+
+  // ── Parse metadata ──
+  const langs = [], qualities = [], sources = [], codecs = [];
+
+  for (const part of metaParts) {
+    if (!part) continue;
+    const low = part.toLowerCase();
+    if      (LANG_MAP[low])    langs.push(LANG_MAP[low]);
+    else if (QUALITY_MAP[low]) qualities.push(QUALITY_MAP[low]);
+    else if (SOURCE_MAP[low])  sources.push(SOURCE_MAP[low]);
+    else if (CODEC_MAP[low])   codecs.push(CODEC_MAP[low]);
+    // unknown tokens after year are ignored
+  }
+
+  // ── Compose formatted title ──
+  let formatted = title;
+  if (year)            formatted += ` (${year})`;
+  if (langs.length)    formatted += ` [${langs.join(' ')}]`;
+  const tech = [...qualities, ...sources, ...codecs];
+  if (tech.length)     formatted += ` {${tech.join(' ')}}`;
+
+  return { formatted, searchTitle: title, year, langs, qualities, sources, codecs };
+}
+
+// ─────────────────────────────────────────────────────────────
+//  STATE
+// ─────────────────────────────────────────────────────────────
+let entries    = [];
+let rawHtml    = "";
 let currentFile = "";
-let currentTab = "preview";
+let currentTab  = "preview";
 
 // ── DOM refs ──
-const dropzone   = document.getElementById("dropzone");
-const fileInput  = document.getElementById("file-input");
-const baseUrlEl  = document.getElementById("base-url");
-const reparseBtn = document.getElementById("reparse-btn");
-const errorBox   = document.getElementById("error-box");
-const results    = document.getElementById("results");
-const entryList  = document.getElementById("entry-list");
-const m3uOutput  = document.getElementById("m3u-output");
-const countNum   = document.getElementById("count-num");
-const tableWrap  = document.getElementById("table-wrap");
-const rawWrap    = document.getElementById("raw-wrap");
-const dropHint   = document.getElementById("drop-hint");
-const dropSub    = document.getElementById("drop-sub");
-const copyBtn    = document.getElementById("copy-btn");
-const rawCopyBtn = document.getElementById("raw-copy-btn");
+const dropzone    = document.getElementById("dropzone");
+const fileInput   = document.getElementById("file-input");
+const baseUrlEl   = document.getElementById("base-url");
+const reparseBtn  = document.getElementById("reparse-btn");
+const tmdbKeyEl   = document.getElementById("tmdb-key");
+const tmdbBtn     = document.getElementById("tmdb-btn");
+const toggleKey   = document.getElementById("toggle-key");
+const errorBox    = document.getElementById("error-box");
+const results     = document.getElementById("results");
+const entryList   = document.getElementById("entry-list");
+const m3uOutput   = document.getElementById("m3u-output");
+const countNum    = document.getElementById("count-num");
+const tableWrap   = document.getElementById("table-wrap");
+const rawWrap     = document.getElementById("raw-wrap");
+const dropHint    = document.getElementById("drop-hint");
+const dropSub     = document.getElementById("drop-sub");
+const copyBtn     = document.getElementById("copy-btn");
+const rawCopyBtn  = document.getElementById("raw-copy-btn");
+const progressWrap = document.getElementById("tmdb-progress-wrap");
+const progressBar  = document.getElementById("tmdb-progress-bar");
+const statusEl     = document.getElementById("tmdb-status");
 
-// ── Drag & Drop ──
+// ── TMDB key toggle visibility ──
+toggleKey.addEventListener("click", () => {
+  tmdbKeyEl.type = tmdbKeyEl.type === "password" ? "text" : "password";
+});
+
+// ── Enable TMDB button when key is entered ──
+tmdbKeyEl.addEventListener("input", () => {
+  tmdbBtn.disabled = tmdbKeyEl.value.trim().length < 10;
+});
+
+// ─────────────────────────────────────────────────────────────
+//  DRAG & DROP
+// ─────────────────────────────────────────────────────────────
 dropzone.addEventListener("click", () => fileInput.click());
 dropzone.addEventListener("dragover", e => { e.preventDefault(); dropzone.classList.add("drag"); });
 dropzone.addEventListener("dragleave", () => dropzone.classList.remove("drag"));
 dropzone.addEventListener("drop", e => {
-  e.preventDefault();
-  dropzone.classList.remove("drag");
+  e.preventDefault(); dropzone.classList.remove("drag");
   const f = e.dataTransfer.files[0];
   if (f) processFile(f);
 });
 fileInput.addEventListener("change", () => { if (fileInput.files[0]) processFile(fileInput.files[0]); });
 reparseBtn.addEventListener("click", () => { if (rawHtml) parseAndRender(rawHtml); });
 
-// ── File processing ──
+// ─────────────────────────────────────────────────────────────
+//  FILE PROCESSING
+// ─────────────────────────────────────────────────────────────
 function processFile(file) {
   currentFile = file.name;
-  dropHint.innerHTML = `<span style="color:#7c3aed">✓</span> <span style="color:#c8c6ff">${file.name}</span>`;
+  dropHint.innerHTML = `<span style="color:#7c3aed">✓</span> <span style="color:#c8c6ff">${escHtml(file.name)}</span>`;
   dropSub.style.display = "none";
   reparseBtn.style.display = "inline-block";
 
@@ -309,9 +667,40 @@ function processFile(file) {
   reader.readAsText(file);
 }
 
+function autoDetectBaseUrl(html) {
+  const manual = baseUrlEl.value.trim();
+  if (manual) return manual;
+
+  const doc = new DOMParser().parseFromString(html, "text/html");
+
+  // <address>Apache... Server at HOST Port PORT</address>
+  const addr = (doc.querySelector("address") || {}).textContent || "";
+  const hostMatch = addr.match(/Server at ([^\s]+) Port (\d+)/i);
+
+  // <title>Index of /some/path</title>
+  const titleText = (doc.querySelector("title") || {}).textContent || "";
+  const pathMatch = titleText.match(/Index of\s+(\/[^\s]*)/i);
+
+  if (hostMatch && pathMatch) {
+    const host   = hostMatch[1];
+    const port   = hostMatch[2];
+    const path   = pathMatch[1].replace(/\/?$/, "/");
+    const scheme = port === "443" ? "https" : "http";
+    const portSuffix = (port === "80" || port === "443") ? "" : `:${port}`;
+    const detected = `${scheme}://${host}${portSuffix}${path}`;
+    baseUrlEl.value = detected;
+    baseUrlEl.style.borderColor = "#4dff88";
+    setTimeout(() => { baseUrlEl.style.borderColor = ""; }, 2500);
+    return detected;
+  }
+
+  return "";
+}
+
 function parseAndRender(html) {
   hideError();
-  const parsed = parseApacheHTML(html, baseUrlEl.value.trim());
+  const baseUrl = autoDetectBaseUrl(html);
+  const parsed = parseApacheHTML(html, baseUrl);
   if (!parsed.length) { showError("No se encontraron enlaces válidos en el HTML."); return; }
   entries = parsed;
   renderAll();
@@ -326,6 +715,7 @@ function parseApacheHTML(html, baseUrl) {
     const href = (a.getAttribute("href") || "").trim();
     if (!href) continue;
     if (IGNORED.some(r => r.test(href))) continue;
+    if (!VIDEO_EXTS.test(href) && !href.startsWith("magnet:")) continue;
 
     const isMagnet = /^magnet:/i.test(href);
     const isHttp   = /^https?:\/\//i.test(href);
@@ -335,32 +725,52 @@ function parseApacheHTML(html, baseUrl) {
       try { url = new URL(href, baseUrl).href; } catch {}
     }
 
-    let title = (a.textContent || "").trim().replace(/\s+/g, " ");
-    if (!title || title === href) {
+    // Get raw filename
+    let rawTitle = (a.textContent || "").trim().replace(/\s+/g, " ");
+    if (!rawTitle || rawTitle === href) {
       try {
         const parts = decodeURIComponent(href).split("/");
-        title = parts[parts.length - 1].split("?")[0];
-      } catch { title = href; }
+        rawTitle = parts[parts.length - 1].split("?")[0];
+      } catch { rawTitle = href; }
     }
-    title = title.replace(/\/$/, "").trim();
-    if (!title) continue;
-    if (SKIP_TITLES.includes(title)) continue;
-    if (/^\[.*\]$/.test(title) && !isMagnet && !VIDEO_EXTS.test(href)) continue;
+    rawTitle = rawTitle.replace(/\/$/, "").trim();
+    if (!rawTitle || SKIP_TITLES.includes(rawTitle)) continue;
+    if (/^\[.*\]$/.test(rawTitle) && !isMagnet && !VIDEO_EXTS.test(href)) continue;
 
-    out.push({ title, url, isMagnet });
+    // Parse and format the filename
+    const parsed = parseFilename(rawTitle);
+
+    out.push({
+      title:       parsed.formatted,
+      searchTitle: parsed.searchTitle,
+      year:        parsed.year,
+      langs:       parsed.langs    || [],
+      qualities:   parsed.qualities || [],
+      sources:     parsed.sources   || [],
+      codecs:      parsed.codecs    || [],
+      url,
+      isMagnet,
+      logo: "",
+    });
   }
   return out;
 }
 
+// ─────────────────────────────────────────────────────────────
+//  M3U BUILDER
+// ─────────────────────────────────────────────────────────────
 function buildM3U() {
   const lines = ["#EXTM3U"];
   entries.forEach(e => {
-    lines.push(`#EXTINF:-1 tvg-logo="",${e.title}`);
+    lines.push(`#EXTINF:-1 tvg-logo="${e.logo || ''}",${e.title}`);
     lines.push(e.url);
   });
   return lines.join("\n");
 }
 
+// ─────────────────────────────────────────────────────────────
+//  RENDER
+// ─────────────────────────────────────────────────────────────
 function renderAll() {
   const m3u = buildM3U();
   m3uOutput.value = m3u;
@@ -375,10 +785,28 @@ function renderList() {
   entries.forEach((e, i) => {
     const row = document.createElement("div");
     row.className = "entry-row";
+    row.id = `row-${i}`;
+
+    // Tags HTML
+    const tagItems = [];
+    if (e.year)             tagItems.push(`<span class="tag tag-year">${e.year}</span>`);
+    (e.langs || []).forEach(l => tagItems.push(`<span class="tag tag-lang">${l}</span>`));
+    const tech = [...(e.qualities||[]), ...(e.sources||[]), ...(e.codecs||[])];
+    tech.forEach(t => tagItems.push(`<span class="tag tag-tech">${t}</span>`));
+
+    const tagsHtml = tagItems.length ? `<div class="entry-tags">${tagItems.join('')}</div>` : '';
+
+    // Poster
+    const posterInner = e.logo
+      ? `<img src="${escHtml(e.logo)}" alt="" loading="lazy">`
+      : '🎬';
+
     row.innerHTML = `
-      <div>
+      <div class="entry-poster" id="poster-${i}">${posterInner}</div>
+      <div class="entry-info">
         <input class="entry-title" value="${escHtml(e.title)}" data-i="${i}">
-        <div class="entry-url">${e.isMagnet ? "🧲 magnet" : escHtml(e.url.length > 80 ? e.url.slice(0,80)+"…" : e.url)}</div>
+        ${tagsHtml}
+        <div class="entry-url">${e.isMagnet ? "🧲 magnet" : escHtml(e.url.length > 90 ? e.url.slice(0,90)+"…" : e.url)}</div>
       </div>
       <button class="del-btn" data-i="${i}">✕</button>
     `;
@@ -399,7 +827,101 @@ function renderList() {
   });
 }
 
-// ── Tabs ──
+// Update just one row's poster without full re-render
+function updatePoster(i, logoUrl) {
+  entries[i].logo = logoUrl;
+  const posterEl = document.getElementById(`poster-${i}`);
+  if (posterEl) {
+    posterEl.classList.remove("loading");
+    if (logoUrl) {
+      posterEl.innerHTML = `<img src="${escHtml(logoUrl)}" alt="" loading="lazy">`;
+    } else {
+      posterEl.innerHTML = '🎬';
+    }
+  }
+  m3uOutput.value = buildM3U();
+}
+
+// ─────────────────────────────────────────────────────────────
+//  TMDB POSTER SEARCH
+// ─────────────────────────────────────────────────────────────
+async function fetchAllPosters() {
+  const apiKey = tmdbKeyEl.value.trim();
+  if (!apiKey) return;
+
+  tmdbBtn.disabled = true;
+  progressWrap.style.display = "block";
+  statusEl.style.display = "block";
+  progressBar.style.width = "0%";
+
+  // Mark all posters as loading
+  entries.forEach((e, i) => {
+    const posterEl = document.getElementById(`poster-${i}`);
+    if (posterEl && !e.logo) posterEl.classList.add("loading");
+  });
+
+  let done = 0;
+  const total = entries.length;
+
+  for (let i = 0; i < entries.length; i++) {
+    const e = entries[i];
+    statusEl.textContent = `Buscando ${i+1}/${total}: ${e.searchTitle || e.title}`;
+
+    try {
+      const logo = await searchTMDB(apiKey, e.searchTitle || e.title, e.year);
+      updatePoster(i, logo);
+    } catch (err) {
+      updatePoster(i, "");
+    }
+
+    done++;
+    progressBar.style.width = `${Math.round((done / total) * 100)}%`;
+
+    // Small delay to avoid rate limiting
+    await sleep(250);
+  }
+
+  statusEl.textContent = `✓ Búsqueda completada — ${entries.filter(e => e.logo).length}/${total} portadas encontradas`;
+  statusEl.style.color = "#4dff88";
+  tmdbBtn.disabled = false;
+}
+
+async function searchTMDB(apiKey, title, year) {
+  if (!title) return "";
+
+  const params = new URLSearchParams({
+    api_key: apiKey,
+    query: title,
+    language: "es-MX",
+    include_adult: false,
+  });
+  if (year) params.set("year", year);
+
+  const url = `https://api.themoviedb.org/3/search/movie?${params}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`TMDB ${res.status}`);
+
+  const data = await res.json();
+  const results = data.results || [];
+
+  // Try with year first, then without
+  let match = results[0];
+  if (!match && year) {
+    const params2 = new URLSearchParams({ api_key: apiKey, query: title, language: "es-MX", include_adult: false });
+    const res2 = await fetch(`https://api.themoviedb.org/3/search/movie?${params2}`);
+    const data2 = await res2.json();
+    match = (data2.results || [])[0];
+  }
+
+  if (!match || !match.poster_path) return "";
+  return `https://image.tmdb.org/t/p/w300${match.poster_path}`;
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ─────────────────────────────────────────────────────────────
+//  TABS
+// ─────────────────────────────────────────────────────────────
 function switchTab(tab) {
   currentTab = tab;
   tableWrap.style.display = tab === "preview" ? "block" : "none";
@@ -408,13 +930,14 @@ function switchTab(tab) {
   document.getElementById("tab-raw").classList.toggle("active", tab === "raw");
 }
 
-// ── Copy ──
+// ─────────────────────────────────────────────────────────────
+//  COPY & DOWNLOAD
+// ─────────────────────────────────────────────────────────────
 function copyM3U() {
-  const m3u = buildM3U();
-  navigator.clipboard.writeText(m3u).then(() => {
+  navigator.clipboard.writeText(buildM3U()).then(() => {
     [copyBtn, rawCopyBtn].forEach(b => {
       b.classList.add("ok");
-      b.textContent = b === copyBtn ? "✓ Copiado" : "✓ Copiado";
+      b.textContent = "✓ Copiado";
     });
     setTimeout(() => {
       copyBtn.classList.remove("ok"); copyBtn.textContent = "📋 Copiar M3U";
@@ -423,29 +946,28 @@ function copyM3U() {
   });
 }
 
-// ── Download ──
 function download(ext) {
-  const m3u = buildM3U();
-  const name = currentFile.replace(/\.html?$/i, "") || "lista";
-  const blob = new Blob([m3u], { type: "text/plain;charset=utf-8" });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement("a");
-  a.href = url; a.download = name + "." + ext;
-  a.click(); URL.revokeObjectURL(url);
+  const name = currentFile.replace(/\.html?$/i, "").replace(/\.txt$/i, "") || "lista";
+  const blob = new Blob([buildM3U()], { type: "text/plain;charset=utf-8" });
+  const a = Object.assign(document.createElement("a"), {
+    href: URL.createObjectURL(blob), download: `${name}.${ext}`
+  });
+  a.click(); URL.revokeObjectURL(a.href);
 }
 
-// ── Helpers ──
+// ─────────────────────────────────────────────────────────────
+//  HELPERS
+// ─────────────────────────────────────────────────────────────
 function showError(msg) {
-  errorBox.textContent = msg;
-  errorBox.style.display = "block";
-  results.style.display  = "none";
+  errorBox.textContent = msg; errorBox.style.display = "block";
+  results.style.display = "none";
 }
-function hideError() {
-  errorBox.style.display = "none";
-}
+function hideError() { errorBox.style.display = "none"; }
 function escHtml(s) {
-  return s.replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  return String(s)
+    .replace(/&/g,"&amp;").replace(/"/g,"&quot;")
+    .replace(/</g,"&lt;").replace(/>/g,"&gt;");
 }
 </script>
 </body>
-</html>
+           </html>
