@@ -1,5 +1,3 @@
-<!DOCTYPE html>
-<html lang="es">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -264,6 +262,28 @@
   .tag-year  { background: #1e1a3a; color: #9080ff; border: 1px solid #3a2a6a; }
   .tag-lang  { background: #1a2a1a; color: #60cc80; border: 1px solid #2a5a3a; }
   .tag-tech  { background: #1a2a3a; color: #60aacc; border: 1px solid #2a4a6a; }
+  .tag-dir   { background: #2a1a10; color: #ff9944; border: 1px solid #6a3a10; }
+  .tag-tv    { background: #1a1a30; color: #aa80ff; border: 1px solid #3a2a6a; }
+
+  /* Detect mode selector */
+  .detect-mode {
+    display: flex; gap: 4px; align-items: center;
+    margin-bottom: 10px;
+  }
+  .detect-mode span {
+    font-size: 11px; color: #5a5a7a; letter-spacing: .06em; margin-right: 4px;
+  }
+  .mode-btn {
+    background: transparent; border: 1px solid #1a1a2a;
+    border-radius: 6px; color: #5a5a7a;
+    padding: 5px 12px; cursor: pointer;
+    font-size: 11px; font-family: inherit;
+    text-transform: uppercase; letter-spacing: .05em;
+    transition: all .15s;
+  }
+  .mode-btn.active   { background: #1e1e3a; border-color: #3a3a6a; color: #ff9944; }
+  .mode-btn.active.v { color: #7c6aff; }
+  .mode-btn.active.b { color: #4daaff; }
 
   .entry-url {
     font-size: 10px; color: #4a4a7a;
@@ -315,7 +335,7 @@
   .info-note a { color: #6060aa; text-decoration: none; }
   .info-note a:hover { color: #8080ff; }
 </style>
-</head>
+<style id="sb_dark_style">img{-webkit-filter:brightness(70%);}</style><style id="sb_cln_style">ins[class*="adsbygoogle"],ins[class*="adsbyadop"],[id*="div-gpt-ad"],amp-ad{display:none !important;}</style></head>
 <body>
 
 <header>
@@ -345,7 +365,7 @@
           <input type="password" id="tmdb-key" placeholder="ej. a1b2c3d4e5f6...">
           <button class="toggle-vis" id="toggle-key" title="Mostrar/ocultar">👁</button>
         </div>
-        <button id="tmdb-btn" onclick="fetchAllPosters()" disabled>🖼 Buscar Portadas</button>
+        <button id="tmdb-btn" onclick="fetchAllPosters()" disabled="">🖼 Buscar Portadas</button>
       </div>
       <div class="info-note">
         API key gratuita en <a href="https://www.themoviedb.org/settings/api" target="_blank">themoviedb.org</a> →
@@ -354,6 +374,14 @@
       <div id="tmdb-progress-wrap"><div id="tmdb-progress-bar"></div></div>
       <div id="tmdb-status"></div>
     </div>
+  </div>
+
+  <!-- Detect mode -->
+  <div class="detect-mode">
+    <span>DETECTAR:</span>
+    <button class="mode-btn v active" id="mode-videos"   onclick="setMode('videos')">🎬 Videos</button>
+    <button class="mode-btn b"        id="mode-both"     onclick="setMode('both')">⚡ Ambos</button>
+    <button class="mode-btn"          id="mode-dirs"     onclick="setMode('dirs')">📁 Directorios</button>
   </div>
 
   <!-- Drop zone -->
@@ -395,7 +423,7 @@
         <span>M3U OUTPUT</span>
         <button class="raw-copy-btn" id="raw-copy-btn" onclick="copyM3U()">Copiar</button>
       </div>
-      <textarea id="m3u-output" readonly></textarea>
+      <textarea id="m3u-output" readonly=""></textarea>
     </div>
   </div>
 
@@ -407,12 +435,22 @@
 // ─────────────────────────────────────────────────────────────
 const IGNORED = [
   /^\?/, /^#/, /^\.\.\//, /^javascript:/i,
-  /\/$/, /^mailto:/i,
+  /^mailto:/i,
   /\/(C|M|D|S|N|A)=/, /&C=/, /&M=/, /&O=/, /&D=/, /&S=/,
   /^\/$/
 ];
 const VIDEO_EXTS = /\.(mp4|mkv|avi|mov|wmv|flv|webm|ts|m2ts|mpg|mpeg|m4v|3gp|ogv|rmvb|divx|f4v)(\?.*)?$/i;
 const SKIP_TITLES = ["Name","Last modified","Size","Description","Parent Directory"];
+
+let detectMode = "videos"; // 'videos' | 'dirs' | 'both'
+
+function setMode(mode) {
+  detectMode = mode;
+  document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
+  const btn = document.getElementById(`mode-${mode}`);
+  if (btn) btn.classList.add("active");
+  if (rawHtml) parseAndRender(rawHtml);
+}
 
 // Language keyword map
 const LANG_MAP = {
@@ -715,41 +753,59 @@ function parseApacheHTML(html, baseUrl) {
     const href = (a.getAttribute("href") || "").trim();
     if (!href) continue;
     if (IGNORED.some(r => r.test(href))) continue;
-    if (!VIDEO_EXTS.test(href) && !href.startsWith("magnet:")) continue;
 
+    const isDir    = href.endsWith("/");
     const isMagnet = /^magnet:/i.test(href);
-    const isHttp   = /^https?:\/\//i.test(href);
+    const isVideo  = VIDEO_EXTS.test(href) || isMagnet;
+
+    // Filter by detect mode
+    if (isDir   && detectMode === "videos") continue;
+    if (!isDir  && detectMode === "dirs")   continue;
+    if (!isDir  && !isVideo)                continue; // not dir, not video → skip
+
+    const isHttp = /^https?:\/\//i.test(href);
 
     let url = href;
     if (!isMagnet && !isHttp && baseUrl) {
       try { url = new URL(href, baseUrl).href; } catch {}
     }
 
-    // Get raw filename
+    // Get raw title
     let rawTitle = (a.textContent || "").trim().replace(/\s+/g, " ");
     if (!rawTitle || rawTitle === href) {
       try {
-        const parts = decodeURIComponent(href).split("/");
+        const parts = decodeURIComponent(href).replace(/\/$/, "").split("/");
         rawTitle = parts[parts.length - 1].split("?")[0];
       } catch { rawTitle = href; }
     }
     rawTitle = rawTitle.replace(/\/$/, "").trim();
     if (!rawTitle || SKIP_TITLES.includes(rawTitle)) continue;
-    if (/^\[.*\]$/.test(rawTitle) && !isMagnet && !VIDEO_EXTS.test(href)) continue;
+    if (/^\[.*\]$/.test(rawTitle) && !isMagnet && !isVideo && !isDir) continue;
 
-    // Parse and format the filename
+    // Parse filename / directory name
     const parsed = parseFilename(rawTitle);
 
+    // Guess media type for dirs: heuristic — "S01","temporada","season" → tv
+    let mediaTypeHint = "movie";
+    if (isDir) {
+      const low = rawTitle.toLowerCase();
+      if (/\bs\d{2}\b|temporada|season|serie|ep\d|capitulo/.test(low)) {
+        mediaTypeHint = "tv";
+      }
+    }
+
     out.push({
-      title:       parsed.formatted,
-      searchTitle: parsed.searchTitle,
-      year:        parsed.year,
-      langs:       parsed.langs    || [],
-      qualities:   parsed.qualities || [],
-      sources:     parsed.sources   || [],
-      codecs:      parsed.codecs    || [],
+      title:         parsed.formatted,
+      searchTitle:   parsed.searchTitle,
+      year:          parsed.year,
+      langs:         parsed.langs      || [],
+      qualities:     parsed.qualities  || [],
+      sources:       parsed.sources    || [],
+      codecs:        parsed.codecs     || [],
       url,
       isMagnet,
+      isDir,
+      mediaTypeHint,
       logo: "",
     });
   }
@@ -789,6 +845,10 @@ function renderList() {
 
     // Tags HTML
     const tagItems = [];
+    if (e.isDir) {
+      tagItems.push(`<span class="tag tag-dir">📁 DIR</span>`);
+      if (e.mediaTypeHint === "tv") tagItems.push(`<span class="tag tag-tv">TV</span>`);
+    }
     if (e.year)             tagItems.push(`<span class="tag tag-year">${e.year}</span>`);
     (e.langs || []).forEach(l => tagItems.push(`<span class="tag tag-lang">${l}</span>`));
     const tech = [...(e.qualities||[]), ...(e.sources||[]), ...(e.codecs||[])];
@@ -799,14 +859,14 @@ function renderList() {
     // Poster
     const posterInner = e.logo
       ? `<img src="${escHtml(e.logo)}" alt="" loading="lazy">`
-      : '🎬';
+      : (e.isDir ? '📁' : '🎬');
 
     row.innerHTML = `
       <div class="entry-poster" id="poster-${i}">${posterInner}</div>
       <div class="entry-info">
         <input class="entry-title" value="${escHtml(e.title)}" data-i="${i}">
         ${tagsHtml}
-        <div class="entry-url">${e.isMagnet ? "🧲 magnet" : escHtml(e.url.length > 90 ? e.url.slice(0,90)+"…" : e.url)}</div>
+        <div class="entry-url">${e.isMagnet ? "🧲 magnet" : e.isDir ? "📁 " + escHtml(e.url.length > 88 ? e.url.slice(0,88)+"…" : e.url) : escHtml(e.url.length > 90 ? e.url.slice(0,90)+"…" : e.url)}</div>
       </div>
       <button class="del-btn" data-i="${i}">✕</button>
     `;
@@ -836,7 +896,7 @@ function updatePoster(i, logoUrl) {
     if (logoUrl) {
       posterEl.innerHTML = `<img src="${escHtml(logoUrl)}" alt="" loading="lazy">`;
     } else {
-      posterEl.innerHTML = '🎬';
+      posterEl.innerHTML = entries[i].isDir ? '📁' : '🎬';
     }
   }
   m3uOutput.value = buildM3U();
@@ -868,7 +928,11 @@ async function fetchAllPosters() {
     statusEl.textContent = `Buscando ${i+1}/${total}: ${e.searchTitle || e.title}`;
 
     try {
-      const logo = await searchTMDB(apiKey, e.searchTitle || e.title, e.year);
+      // For directories with no clear TV hint, try movie first then TV as fallback
+      const hint = e.mediaTypeHint === "tv" ? "tv"
+                 : e.isDir ? "dir_fallback"
+                 : "movie";
+      const logo = await searchTMDB(apiKey, e.searchTitle || e.title, e.year, hint);
       updatePoster(i, logo);
     } catch (err) {
       updatePoster(i, "");
@@ -886,31 +950,41 @@ async function fetchAllPosters() {
   tmdbBtn.disabled = false;
 }
 
-async function searchTMDB(apiKey, title, year) {
+async function searchTMDB(apiKey, title, year, mediaTypeHint) {
   if (!title) return "";
 
-  const params = new URLSearchParams({
-    api_key: apiKey,
-    query: title,
-    language: "es-MX",
-    include_adult: false,
-  });
-  if (year) params.set("year", year);
+  const baseParams = { api_key: apiKey, query: title, language: "es-MX", include_adult: false };
 
-  const url = `https://api.themoviedb.org/3/search/movie?${params}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`TMDB ${res.status}`);
+  async function tryMovie(withYear) {
+    const p = new URLSearchParams(baseParams);
+    if (withYear && year) p.set("year", year);
+    const res = await fetch(`https://api.themoviedb.org/3/search/movie?${p}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return (data.results || []).find(r => r.poster_path) || null;
+  }
 
-  const data = await res.json();
-  const results = data.results || [];
+  async function tryTV(withYear) {
+    const p = new URLSearchParams(baseParams);
+    if (withYear && year) p.set("first_air_date_year", year);
+    const res = await fetch(`https://api.themoviedb.org/3/search/tv?${p}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return (data.results || []).find(r => r.poster_path) || null;
+  }
 
-  // Try with year first, then without
-  let match = results[0];
-  if (!match && year) {
-    const params2 = new URLSearchParams({ api_key: apiKey, query: title, language: "es-MX", include_adult: false });
-    const res2 = await fetch(`https://api.themoviedb.org/3/search/movie?${params2}`);
-    const data2 = await res2.json();
-    match = (data2.results || [])[0];
+  let match = null;
+
+  if (mediaTypeHint === "tv") {
+    // TV-first strategy
+    match = await tryTV(true) || await tryTV(false) || await tryMovie(true) || await tryMovie(false);
+  } else {
+    // Movie-first strategy (default for video files)
+    match = await tryMovie(true) || await tryMovie(false);
+    // If nothing found and it's a dir, also try TV
+    if (!match && mediaTypeHint === "dir_fallback") {
+      match = await tryTV(true) || await tryTV(false);
+    }
   }
 
   if (!match || !match.poster_path) return "";
@@ -969,5 +1043,6 @@ function escHtml(s) {
     .replace(/</g,"&lt;").replace(/>/g,"&gt;");
 }
 </script>
+
+           
 </body>
-           </html>
