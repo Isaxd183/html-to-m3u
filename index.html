@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -86,7 +87,6 @@
     background: #28284a; border-color: #5a5aaa;
   }
 
-  /* TMDB fetch button */
   #tmdb-btn {
     background: linear-gradient(135deg, #1a6b3a, #0d4a2a);
     border: 1px solid #2a8a4a;
@@ -97,11 +97,8 @@
     transition: all .2s; letter-spacing: .04em;
   }
   #tmdb-btn:hover { background: linear-gradient(135deg, #1f8044, #125a34); }
-  #tmdb-btn:disabled {
-    opacity: .5; cursor: not-allowed;
-  }
+  #tmdb-btn:disabled { opacity: .5; cursor: not-allowed; }
 
-  /* Progress bar */
   #tmdb-progress-wrap {
     display: none;
     margin-top: 8px;
@@ -123,7 +120,6 @@
     letter-spacing: .04em;
   }
 
-  /* Drop zone */
   #dropzone {
     border: 2px dashed #2a2a3a;
     border-radius: 12px;
@@ -140,7 +136,6 @@
   #dropzone .sub  { color: #4a4a6a; font-size: 11px; margin-top: 6px; }
   #file-input { display: none; }
 
-  /* Error */
   #error-box {
     display: none;
     background: #1a0a0a; border: 1px solid #5a1a1a;
@@ -148,7 +143,6 @@
     color: #ff6b6b; font-size: 13px; margin-bottom: 20px;
   }
 
-  /* Results */
   #results { display: none; }
 
   .results-header {
@@ -192,7 +186,6 @@
     letter-spacing: .04em;
   }
 
-  /* Table */
   #table-wrap {
     background: #0d0d18; border: 1px solid #1e1e30;
     border-radius: 10px; overflow: hidden;
@@ -214,7 +207,6 @@
   }
   .entry-row:nth-child(even) { background: #0b0b16; }
 
-  /* Poster thumbnail */
   .entry-poster {
     width: 36px; height: 54px;
     border-radius: 4px;
@@ -249,11 +241,8 @@
     border-bottom: 1px solid transparent;
     transition: border-color .2s;
   }
-  .entry-title:focus {
-    border-bottom-color: #4a4aaa;
-  }
+  .entry-title:focus { border-bottom-color: #4a4aaa; }
 
-  /* Parsed tags */
   .entry-tags { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 3px; }
   .tag {
     font-size: 10px; border-radius: 3px;
@@ -265,7 +254,6 @@
   .tag-dir   { background: #2a1a10; color: #ff9944; border: 1px solid #6a3a10; }
   .tag-tv    { background: #1a1a30; color: #aa80ff; border: 1px solid #3a2a6a; }
 
-  /* Detect mode selector */
   .detect-mode {
     display: flex; gap: 4px; align-items: center;
     margin-bottom: 10px;
@@ -298,7 +286,6 @@
     align-self: start;
   }
 
-  /* Raw */
   #raw-wrap {
     background: #0d0d18; border: 1px solid #1e1e30;
     border-radius: 10px; overflow: hidden; display: none;
@@ -325,7 +312,6 @@
     line-height: 1.6;
   }
 
-  /* Info badge */
   .info-note {
     font-size: 10px; color: #4a4a6a;
     background: #12121e; border: 1px solid #1e1e30;
@@ -335,7 +321,7 @@
   .info-note a { color: #6060aa; text-decoration: none; }
   .info-note a:hover { color: #8080ff; }
 </style>
-<style id="sb_dark_style">img{-webkit-filter:brightness(70%);}</style><style id="sb_cln_style">ins[class*="adsbygoogle"],ins[class*="adsbyadop"],[id*="div-gpt-ad"],amp-ad{display:none !important;}</style></head>
+</head>
 <body>
 
 <header>
@@ -348,7 +334,6 @@
 
 <main>
 
-  <!-- Config section -->
   <div class="config-grid">
     <div class="config-block">
       <label class="field-label">URL BASE (opcional — para rutas relativas)</label>
@@ -365,7 +350,7 @@
           <input type="password" id="tmdb-key" placeholder="ej. a1b2c3d4e5f6...">
           <button class="toggle-vis" id="toggle-key" title="Mostrar/ocultar">👁</button>
         </div>
-        <button id="tmdb-btn" onclick="fetchAllPosters()" disabled="">🖼 Buscar Portadas</button>
+        <button id="tmdb-btn" onclick="fetchAllPosters()" disabled>🖼 Buscar Portadas</button>
       </div>
       <div class="info-note">
         API key gratuita en <a href="https://www.themoviedb.org/settings/api" target="_blank">themoviedb.org</a> →
@@ -376,7 +361,6 @@
     </div>
   </div>
 
-  <!-- Detect mode -->
   <div class="detect-mode">
     <span>DETECTAR:</span>
     <button class="mode-btn v active" id="mode-videos"   onclick="setMode('videos')">🎬 Videos</button>
@@ -384,7 +368,6 @@
     <button class="mode-btn"          id="mode-dirs"     onclick="setMode('dirs')">📁 Directorios</button>
   </div>
 
-  <!-- Drop zone -->
   <div id="dropzone">
     <input type="file" id="file-input" accept=".html,.htm,.txt">
     <div class="icon">📂</div>
@@ -423,7 +406,7 @@
         <span>M3U OUTPUT</span>
         <button class="raw-copy-btn" id="raw-copy-btn" onclick="copyM3U()">Copiar</button>
       </div>
-      <textarea id="m3u-output" readonly=""></textarea>
+      <textarea id="m3u-output" readonly></textarea>
     </div>
   </div>
 
@@ -442,7 +425,7 @@ const IGNORED = [
 const VIDEO_EXTS = /\.(mp4|mkv|avi|mov|wmv|flv|webm|ts|m2ts|mpg|mpeg|m4v|3gp|ogv|rmvb|divx|f4v)(\?.*)?$/i;
 const SKIP_TITLES = ["Name","Last modified","Size","Description","Parent Directory"];
 
-let detectMode = "videos"; // 'videos' | 'dirs' | 'both'
+let detectMode = "videos";
 
 function setMode(mode) {
   detectMode = mode;
@@ -452,7 +435,6 @@ function setMode(mode) {
   if (rawHtml) parseAndRender(rawHtml);
 }
 
-// Language keyword map
 const LANG_MAP = {
   lat: 'Lat', latino: 'Lat', latin: 'Lat',
   esp: 'Esp', español: 'Esp', spanish: 'Esp',
@@ -467,14 +449,12 @@ const LANG_MAP = {
   multi: 'Multi', dual: 'Dual',
 };
 
-// Quality/resolution map
 const QUALITY_MAP = {
   '4k': '4K', '2160p': '4K', '1080p': '1080p', '1080i': '1080i',
   '720p': '720p', '720i': '720i', '540p': '540p',
   '480p': '480p', '360p': '360p', '240p': '240p',
 };
 
-// Source map
 const SOURCE_MAP = {
   hdrip: 'HDRip', 'hd-rip': 'HDRip',
   dvdrip: 'DVDRip', 'dvd-rip': 'DVDRip',
@@ -490,7 +470,6 @@ const SOURCE_MAP = {
   vod: 'VOD',
 };
 
-// Codec map
 const CODEC_MAP = {
   x264: 'x264', x265: 'x265',
   h264: 'H.264', 'h.264': 'H.264', '264': 'x264',
@@ -502,7 +481,6 @@ const CODEC_MAP = {
   ac3: 'AC3', dd51: 'DD5.1',
 };
 
-// Words to keep lowercase inside a title (articles/prepositions)
 const LOWER_WORDS = new Set([
   'a','an','the','of','in','on','at','to','for','and','or','but','nor','so','yet',
   'de','del','la','el','los','las','en','con','por','para','un','una','y','e',
@@ -512,33 +490,27 @@ const LOWER_WORDS = new Set([
 // ─────────────────────────────────────────────────────────────
 //  FILENAME PARSER
 // ─────────────────────────────────────────────────────────────
-// Capitaliza una palabra correctamente:
-// - Si es toda dígitos → tal cual
-// - Si es un acrónimo reconocido (≤4 letras, todo caps en el original) → todo MAYÚS
-// - Si debe ir en minúsculas (artículo/preposición, no es la primera palabra) → minúsculas
-// - Si no → Primera Mayúscula + resto en minúsculas
 function titleCaseWord(w, isFirst) {
-  if (/^\d+(\.\d+)?$/.test(w)) return w;                           // número
+  if (/^\d+(\.\d+)?$/.test(w)) return w;
   const low = w.toLowerCase();
-  if (!isFirst && LOWER_WORDS.has(low)) return low;                 // artículo interno
-  // Acrónimo: all-caps y longitud ≤ 4 (LAT, SUB, XXL, USA...)
+  if (!isFirst && LOWER_WORDS.has(low)) return low;
   if (w === w.toUpperCase() && /^[A-Z]{2,4}$/.test(w)) return w;
   return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
 }
 
 function parseFilename(raw) {
+  // Treat underscores as spaces
+  raw = raw.replace(/_/g, ' ');
+
   // Remove video extension
   const cleaned = raw.replace(/\.(mp4|mkv|avi|mov|wmv|flv|webm|m2ts|mpg|mpeg|m4v|3gp|ogv|rmvb|divx|f4v|ts)(\?.*)?$/i, '');
 
-  // Check if already space-separated (not dot-encoded)
   const dotCount   = (cleaned.match(/\./g) || []).length;
   const spaceCount = (cleaned.match(/ /g)  || []).length;
 
   if (dotCount < 2 && spaceCount >= 1) {
-    // Space-separated: parse words, look for year/lang/quality tokens too
     const words = cleaned.split(/\s+/);
 
-    // Find year
     const YEAR_RE = /^(19\d{2}|20[0-4]\d)$/;
     let yearIdx = -1, year = '';
     for (let i = 1; i < words.length; i++) {
@@ -550,7 +522,6 @@ function parseFilename(raw) {
       titleWords = words.slice(0, yearIdx);
       metaWords  = words.slice(yearIdx + 1);
     } else {
-      // No year — look for first recognized meta keyword
       let splitIdx = words.length;
       for (let i = 0; i < words.length; i++) {
         const low = words[i].toLowerCase();
@@ -564,7 +535,6 @@ function parseFilename(raw) {
 
     const title = titleWords.map((w, i) => titleCaseWord(w, i === 0)).filter(Boolean).join(' ');
 
-    // Parse meta
     const langs = [], qualities = [], sources = [], codecs = [];
     for (const w of metaWords) {
       const low = w.toLowerCase();
@@ -583,10 +553,8 @@ function parseFilename(raw) {
     return { formatted, searchTitle: title, year, langs, qualities, sources, codecs };
   }
 
-  // Split by dots (and hyphens that look like separators, not part of words)
   const parts = cleaned.split('.');
 
-  // ── Find year ──
   const YEAR_RE = /^(19\d{2}|20[0-4]\d)$/;
   let yearIdx = -1, year = '';
   for (let i = 1; i < parts.length; i++) {
@@ -598,7 +566,6 @@ function parseFilename(raw) {
     titleParts = parts.slice(0, yearIdx);
     metaParts  = parts.slice(yearIdx + 1);
   } else {
-    // No year — split at first recognized keyword
     let splitIdx = parts.length;
     for (let i = 0; i < parts.length; i++) {
       const low = parts[i].toLowerCase();
@@ -610,12 +577,9 @@ function parseFilename(raw) {
     metaParts  = parts.slice(splitIdx);
   }
 
-  // ── Build title ──
   const title = titleParts.map((w, i) => titleCaseWord(w, i === 0)).filter(Boolean).join(' ');
 
-  // ── Parse metadata ──
   const langs = [], qualities = [], sources = [], codecs = [];
-
   for (const part of metaParts) {
     if (!part) continue;
     const low = part.toLowerCase();
@@ -623,10 +587,8 @@ function parseFilename(raw) {
     else if (QUALITY_MAP[low]) qualities.push(QUALITY_MAP[low]);
     else if (SOURCE_MAP[low])  sources.push(SOURCE_MAP[low]);
     else if (CODEC_MAP[low])   codecs.push(CODEC_MAP[low]);
-    // unknown tokens after year are ignored
   }
 
-  // ── Compose formatted title ──
   let formatted = title;
   if (year)            formatted += ` (${year})`;
   if (langs.length)    formatted += ` [${langs.join(' ')}]`;
@@ -644,7 +606,6 @@ let rawHtml    = "";
 let currentFile = "";
 let currentTab  = "preview";
 
-// ── DOM refs ──
 const dropzone    = document.getElementById("dropzone");
 const fileInput   = document.getElementById("file-input");
 const baseUrlEl   = document.getElementById("base-url");
@@ -667,12 +628,10 @@ const progressWrap = document.getElementById("tmdb-progress-wrap");
 const progressBar  = document.getElementById("tmdb-progress-bar");
 const statusEl     = document.getElementById("tmdb-status");
 
-// ── TMDB key toggle visibility ──
 toggleKey.addEventListener("click", () => {
   tmdbKeyEl.type = tmdbKeyEl.type === "password" ? "text" : "password";
 });
 
-// ── Enable TMDB button when key is entered ──
 tmdbKeyEl.addEventListener("input", () => {
   tmdbBtn.disabled = tmdbKeyEl.value.trim().length < 10;
 });
@@ -711,11 +670,9 @@ function autoDetectBaseUrl(html) {
 
   const doc = new DOMParser().parseFromString(html, "text/html");
 
-  // <address>Apache... Server at HOST Port PORT</address>
   const addr = (doc.querySelector("address") || {}).textContent || "";
   const hostMatch = addr.match(/Server at ([^\s]+) Port (\d+)/i);
 
-  // <title>Index of /some/path</title>
   const titleText = (doc.querySelector("title") || {}).textContent || "";
   const pathMatch = titleText.match(/Index of\s+(\/[^\s]*)/i);
 
@@ -758,10 +715,9 @@ function parseApacheHTML(html, baseUrl) {
     const isMagnet = /^magnet:/i.test(href);
     const isVideo  = VIDEO_EXTS.test(href) || isMagnet;
 
-    // Filter by detect mode
     if (isDir   && detectMode === "videos") continue;
     if (!isDir  && detectMode === "dirs")   continue;
-    if (!isDir  && !isVideo)                continue; // not dir, not video → skip
+    if (!isDir  && !isVideo)                continue;
 
     const isHttp = /^https?:\/\//i.test(href);
 
@@ -770,7 +726,6 @@ function parseApacheHTML(html, baseUrl) {
       try { url = new URL(href, baseUrl).href; } catch {}
     }
 
-    // Get raw title
     let rawTitle = (a.textContent || "").trim().replace(/\s+/g, " ");
     if (!rawTitle || rawTitle === href) {
       try {
@@ -782,10 +737,8 @@ function parseApacheHTML(html, baseUrl) {
     if (!rawTitle || SKIP_TITLES.includes(rawTitle)) continue;
     if (/^\[.*\]$/.test(rawTitle) && !isMagnet && !isVideo && !isDir) continue;
 
-    // Parse filename / directory name
     const parsed = parseFilename(rawTitle);
 
-    // Guess media type for dirs: heuristic — "S01","temporada","season" → tv
     let mediaTypeHint = "movie";
     if (isDir) {
       const low = rawTitle.toLowerCase();
@@ -843,7 +796,6 @@ function renderList() {
     row.className = "entry-row";
     row.id = `row-${i}`;
 
-    // Tags HTML
     const tagItems = [];
     if (e.isDir) {
       tagItems.push(`<span class="tag tag-dir">📁 DIR</span>`);
@@ -856,7 +808,6 @@ function renderList() {
 
     const tagsHtml = tagItems.length ? `<div class="entry-tags">${tagItems.join('')}</div>` : '';
 
-    // Poster
     const posterInner = e.logo
       ? `<img src="${escHtml(e.logo)}" alt="" loading="lazy">`
       : (e.isDir ? '📁' : '🎬');
@@ -887,7 +838,6 @@ function renderList() {
   });
 }
 
-// Update just one row's poster without full re-render
 function updatePoster(i, logoUrl) {
   entries[i].logo = logoUrl;
   const posterEl = document.getElementById(`poster-${i}`);
@@ -914,7 +864,6 @@ async function fetchAllPosters() {
   statusEl.style.display = "block";
   progressBar.style.width = "0%";
 
-  // Mark all posters as loading
   entries.forEach((e, i) => {
     const posterEl = document.getElementById(`poster-${i}`);
     if (posterEl && !e.logo) posterEl.classList.add("loading");
@@ -928,7 +877,6 @@ async function fetchAllPosters() {
     statusEl.textContent = `Buscando ${i+1}/${total}: ${e.searchTitle || e.title}`;
 
     try {
-      // For directories with no clear TV hint, try movie first then TV as fallback
       const hint = e.mediaTypeHint === "tv" ? "tv"
                  : e.isDir ? "dir_fallback"
                  : "movie";
@@ -940,8 +888,6 @@ async function fetchAllPosters() {
 
     done++;
     progressBar.style.width = `${Math.round((done / total) * 100)}%`;
-
-    // Small delay to avoid rate limiting
     await sleep(250);
   }
 
@@ -976,12 +922,9 @@ async function searchTMDB(apiKey, title, year, mediaTypeHint) {
   let match = null;
 
   if (mediaTypeHint === "tv") {
-    // TV-first strategy
     match = await tryTV(true) || await tryTV(false) || await tryMovie(true) || await tryMovie(false);
   } else {
-    // Movie-first strategy (default for video files)
     match = await tryMovie(true) || await tryMovie(false);
-    // If nothing found and it's a dir, also try TV
     if (!match && mediaTypeHint === "dir_fallback") {
       match = await tryTV(true) || await tryTV(false);
     }
@@ -1044,5 +987,5 @@ function escHtml(s) {
 }
 </script>
 
-           
 </body>
+</html>
